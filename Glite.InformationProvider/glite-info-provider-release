@@ -1,0 +1,79 @@
+#!/usr/bin/perl -w
+
+use POSIX;
+use FileHandle;
+
+my $glite_dir = "/opt/glite/";
+my $glite_var_dir = "/opt/glite/var";
+
+if (exists($ENV{GLITE_LOCATION})) {
+    $glite_dir = "$ENV{GLITE_LOCATION}";
+} 
+
+if (exists($ENV{GLITE_LOCATION_VAR})) {
+    $glite_var_dir = "$ENV{GLITE_LOCATION_VAR}";
+} else {
+    $glite_var_dir = "$glite_dir/var";
+}
+
+my $cache_dir="$glite_var_dir/cache/gip/";
+my $ldif_dir="$glite_dir/etc/gip/ldif";
+
+my @metapackage_versions = ();
+my @services = ();
+
+chomp(my $glite_version=`$glite_dir/bin/glite-version`);
+chomp(my $update_number=`$glite_dir/bin/glite-version -u`);
+chomp(my @metapackage_names=`$glite_dir/bin/glite-version -l`);
+foreach(@metapackage_names) {
+  chomp(my $metapackage_version=`$glite_dir/bin/glite-version -n $_ -v`);
+  chomp(my $service=`$glite_dir/bin/glite-version -n $_ -s`);
+  push @metapackage_versions, $metapackage_version;
+  push @services, $service;
+}
+
+#Remove junk files from the cache
+my @junk;
+push @junk, glob("$cache_dir/*~");
+push @junk, glob("$cache_dir}/\#*");
+push @junk, glob("$ldif_dir/*~");
+push @junk, glob("$ldif_dir}/\#*");
+foreach(@junk){
+    remove($_);
+}
+
+foreach(glob("$cache_dir/*.ldif.*"),glob("$ldif_dir/*.ldif")){
+    my $fh = new FileHandle $_  or die "Can't open file: $_\n";
+    my @dns = grep /dn:\sGlueServiceUniqueID=.*,mds-vo-name=resource,o=grid/i, <$fh>;
+ 
+    foreach (@dns) {
+      m/GlueServiceUniqueID=([^,]*),/;
+      my $ID=$1;
+      print "dn: GlueServiceDataKey=glite-version,GlueServiceUniqueID=$ID,mds-vo-name=resource,o=grid\n";
+      print "objectClass: GlueTop\nobjectClass: GlueServiceData\nobjectClass: GlueKey\n";
+      print "GlueServiceDataKey: glite-version\nGlueServiceDataValue: $glite_version\nGlueChunkKey: GlueServiceUniqueID=$ID\n\n";
+      unless($update_number) {
+        print "dn: GlueServiceDataKey=update,GlueServiceUniqueID=$ID,mds-vo-name=resource,o=grid\n";
+        print "objectClass: GlueTop\nobjectClass: GlueServiceData\nobjectClass: GlueKey\n";
+        print "GlueServiceDataKey: update\nGlueServiceDataValue: $update_number\nGlueChunkKey: GlueServiceUniqueID=$ID\n\n";
+      }
+
+      if ($#metapackage_names != 0) {
+        foreach (0..$#metapackage_names) {
+          print "dn: GlueServiceDataKey=metapackage-name,GlueServiceUniqueID=$ID,mds-vo-name=resource,o=grid\n";
+          print "objectClass: GlueTop\nobjectClass: GlueServiceData\nobjectClass: GlueKey\n";
+          print "GlueServiceDataKey: metapackage-name \nGlueServiceDataValue: $metapackage_names[$_]\nGlueChunkKey: GlueServiceUniqueID=$ID\n\n";
+
+          print "dn: GlueServiceDataKey=metapackage-version,GlueServiceUniqueID=$ID,mds-vo-name=resource,o=grid\n";
+          print "objectClass: GlueTop\nobjectClass: GlueServiceData\nobjectClass: GlueKey\n";
+          print "GlueServiceDataKey: metapackage-version\nGlueServiceDataValue: $metapackage_versions[$_]\nGlueChunkKey: GlueServiceUniqueID=$ID\n\n";
+
+          print "dn: GlueServiceDataKey=service-level,GlueServiceUniqueID=$ID,mds-vo-name=resource,o=grid\n";
+          print "objectClass: GlueTop\nobjectClass: GlueServiceData\nobjectClass: GlueKey\n";
+          print "GlueServiceDataKey: service-level\nGlueServiceDataValue: $services[$_]\nGlueChunkKey: GlueServiceUniqueID=$ID\n\n";
+        }
+      }
+    }
+}
+
+

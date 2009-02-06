@@ -1,0 +1,18 @@
+#Do not change any of the variables names. 
+#Changing or adding any fixed values is ok.
+name = "$machinename"
+ip = "$ip"
+hostname = "$hostname"
+memory = "$memory"
+disk = ['phy:/dev/$vg/xen-root-$machinename,$driveroot,w','phy:/dev/$vg/xen-swap-$machinename,$driveswap,w']
+root = "/dev/$driveroot ro"
+vif = [ '' ]
+cpus = ''
+vcpus = "$vcpus"
+gateway = "128.142.1.1"
+netmask = "255.255.0.0"
+on_reboot = 'restart'
+on_crash = 'restart'
+on_poweroff = 'restart'
+bootloader = '/usr/bin/pygrub'
+extra = '$username'

@@ -1,0 +1,10 @@
+SSLRequireSSL
+SSLVerifyDepth 5
+SSLVerifyClient require
+SSLOptions +StdEnvVars +StrictRequire +OptRenegotiate
+SSLOptions +FakeBasicAuth
+
+AuthType Basic
+AuthName "vNode"
+AuthUserFile /etc/httpd/conf/httpd.passwd
+Require valid-user

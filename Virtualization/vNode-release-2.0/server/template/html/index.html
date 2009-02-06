@@ -1,0 +1,454 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "https://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <meta https-equiv="content-type" content="text/html; charset=utf-8">
+<title>vNode v2 server</title>
+
+<style type="text/css">
+/*margin and padding on body element
+  can introduce errors in determining
+  element position and are not recommended;
+  we turn them off as a foundation for YUI
+  CSS treatments. */
+body {
+	margin:0;
+	padding:0;
+}
+#resp { margin:10px;padding:5px;border:1px solid #ccc;background:#fff;}
+#resp li { font-family:monospace }
+
+.cellColorAvailable {background-color: #003300}
+
+.mycss {background-color: #F2F2F2}
+a.mycss:link {color: black; text-decoration: none; }
+a.mycss:hover {color: red; text-decoration: none; }
+
+/*
+.yui-dt-scrollable th, .yui-dt-scrollbody td { 
+      width:10em; 
+}
+.yui-dt-scrollable .col2 { 
+     width:20em; /* this column was assigned "col2" as "className" */ 
+} 
+*/
+
+</style>
+
+<!-- CSS Libraries -->
+<link rel="stylesheet" type="text/css" href="/server/template/libs/yui/build/fonts/fonts-min.css" />
+<link rel="stylesheet" type="text/css" href="/server/template/libs/yui/build/datatable/assets/skins/sam/datatable.css" />
+<link rel="stylesheet" type="text/css" href="/server/template/libs/yui/build/container/assets/skins/sam/container.css" /> 
+<link rel="stylesheet" type="text/css" href="/server/template/libs/yui/build/menu/assets/skins/sam/menu.css">
+<link rel="stylesheet" type="text/css" href="/server/template/libs/yui/build/button/assets/skins/sam/button.css" />
+<link rel="stylesheet" type="text/css" href="/server/template/libs/yui/build/tabview/assets/skins/sam/tabview.css" />
+
+
+<!-- YUI Libraries -->
+<script type="text/javascript" src="/server/template/libs/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/utilities/utilities.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/container/container-min.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/menu/menu-min.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/button/button-min.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/element/element-beta-min.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/datasource/datasource-beta-min.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/datatable/datatable-beta-min.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/tabview/tabview-min.js"></script>
+<script type="text/javascript" src="/server/template/libs/yui/build/dragdrop/dragdrop-min.js"></script>
+
+<!-- vNode YUI Libraries -->
+
+<!-- Main -->
+<script type="text/javascript" src="/server/template/jscript/vNodeMain.js"></script>
+<!-- Deploy Table -->
+<script type="text/javascript" src="/server/template/jscript/deployTable.js"></script> 
+<!-- Terminate Table -->
+<script type="text/javascript" src="/server/template/jscript/terminateTable.js"></script> 
+<!-- UpTime Table -->
+<script type="text/javascript" src="/server/template/jscript/upTimeTable.js"></script> 
+<!-- State Virtual Grid Table -->
+<script type="text/javascript" src="/server/template/jscript/stateVGTable.js"></script>
+<!-- Terminate Virtual Grdi Table -->
+<script type="text/javascript" src="/server/template/jscript/terminateVGTable.js"></script> 
+<!-- Admin Table -->
+<script type="text/javascript" src="/server/template/jscript/adminTable.js"></script> 
+<!-- Navigation Table -->
+<script type="text/javascript" src="/server/template/jscript/navigationMenu.js"></script>
+<!-- Data -->
+<script type="text/javascript" src="/server/template/jscript/data.js"></script>
+<!-- SiteInfo Table -->
+<script type="text/javascript" src="/server/template/jscript/siteInfoTable.js"></script>
+<!-- 
+<script type="text/javascript" src="/template/js/logger.js"></script>
+-->
+
+
+<!-- Ext-JS libraries -->
+<link rel="stylesheet" type="text/css" href="/server/template/libs/ext-js/ext-all.css" />
+<link rel="stylesheet" type="text/css" href="/server/template/libs/ext-js/combos.css" />
+<script type="text/javascript" src="/server/template/libs/ext-js/ext-base.js"></script>
+<script type="text/javascript" src="/server/template/libs/ext-js/ext.js"></script> 
+<script type="text/javascript" src="/server/configuration/states.js"></script>
+<script type="text/javascript" src="/server/template/libs/ext-js/combos.js"></script>
+
+
+<script type="text/javascript">
+
+function initConf() {
+  getUsername();
+  randomString();
+  isPortalBlocked();
+  //setPortalStatus();
+}
+
+function randomString() {
+	var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+	var string_length = 13;
+	var randomstring = '';
+	for (var i=0; i<string_length; i++) {
+		var rnum = Math.floor(Math.random() * chars.length);
+		randomstring += chars.substring(rnum,rnum+1);
+	}
+  return randomstring;
+}
+function getNowHours() {
+	var currentTime = new Date()
+	var hours = currentTime.getHours()
+	return hours;
+}
+function getNowMinutes() {
+	var currentTime = new Date()
+	var minutes = currentTime.getMinutes()
+  if (minutes < 10) {
+		minutes = "0" + minutes;
+	}
+	return minutes;
+}
+function getNowSeconds() {
+	var currentTime = new Date()
+	var seconds = currentTime.getSeconds()
+  return seconds;
+}
+
+function optionCheckbox(index) {
+  if (index == 0) {
+    document.getElementById("autoVM").checked = false;
+    if (document.getElementById("vmNumb").value == 1 || document.getElementById("vmNumb").value == 2 || document.getElementById("vmNumb").value == 3 || document.getElementById("vmNumb").value == 4) {
+      getChecked(index,document.getElementById("vmNumb").value);
+    }
+    else {
+     alert("Invalid choice");
+     return;
+    }
+  }
+}
+function disablePortal() {
+  if (document.getElementById("disablePortal").checked == true) {
+    disablePortalJS("yes")
+  }
+  else {
+    disablePortalJS("no")
+  }
+}
+
+</script>
+</head>
+
+
+
+<body class=" yui-skin-sam" onload="initConf()">
+<!-- -->
+<img src="/server/template/html/img/vDino.jpg"></img>
+<div id="vNodeMenu" class="yuimenubar yuimenubarnav">
+	<div class="bd">
+		<ul class="first-of-type">
+			<li class="yuimenubaritem first-of-type"> 
+				<a class="yuimenubaritemlabel">Virtual Machines</a>
+      </li>
+      <li class="yuimenubaritem">
+     		<a class="yuimenubaritemlabel">Virtual Grids</a>
+     	</li>
+      <li class="yuimenubaritem">
+				<a class="yuimenubaritemlabel">Admin</a>
+      </li>
+      <li class="yuimenubaritem">
+      	<a class="yuimenubaritemlabel" href="http://cern.ch/osfarm">OS Farm</a>
+      </li>
+    </ul>
+  </div>
+</div>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+<center>
+<div id="dialogDeployVMs">
+	<!-- Header -->
+	<div class="hd">Deploy a Xen Virtual Machine</div>
+		<!-- Body -->
+		<div class="bd">
+		Configure your Xen Virtual Machine<br>
+		<form method="POST" action="" name="deploy">
+			<table align=center>
+			<tr>
+				<td><label for="PhyHost"><i>Physical Hosts: </i></label></td>
+				<td><label for="VirtualHostnames"><i>Virtual Hostnames: </i></label></td>
+				<td><label for="ExpiryTime"><i>Expiry Time(days):</i></label></td>
+				<td><label for="Memory"><i>Memory (MB):</i></label></td>
+				<td><label for="Partition"><i>Partition (GB):</i></label></td>
+				<td><label for="OSImage"><i>OS Image:</i></label></td>
+				<td><label for="OSImage"><i>Service Type:</i></label></td>
+			</tr>
+			<tr>
+				<td>
+       <div>
+          <input type="text" name="physicalHost" id="phyHost" size="20"/>
+        </div> 
+				</td>
+				<td>
+        <div>
+          <input type="text" name="virtualHostnames" id="virtualHost" size="20"/>
+        </div> 
+				</td>
+				<td>
+        <div>
+          <input type="text" name="expiryTimeVM" id="expiryTime" size="20"/>
+        </div> 
+				</td>
+				<td>
+        <div>
+          <input type="text" name="memoryVM" id="memory" size="20"/>
+        </div> 
+				</td>
+				<td>
+        <div>
+          <input type="text" name="partitionVM" id="partition" size="20"/>
+        </div> 
+				</td>
+				<td>
+        <div>
+          <input type="text" name="osImageVM" id="osImage" size="20"/>
+        </div> 
+				</td>
+				<td>
+        <div>
+          <input type="text" name="serviceVM" id="services" size="20"/>
+        </div> 
+				</td>
+			</tr>
+			</table>
+			<br>
+			Advanced Options<br>
+		  <label for="imageFilename"><i>Image Filename:</i></label><input type="textbox" name="imageFilename" MAXLENGTH=20 class="x-form-text x-form-field"  />
+		  <label for="virtualMachineName"><i>Virtual Machine Name:</i></label><input type="textbox" name="vmName" id="vmN" value="" MAXLENGTH=13 class="x-form-text x-form-field" />
+      <input type="hidden" name="vmAction" id="actionScript" value="" />
+			<hr>
+			Xen Virtual Machine(s) that will be deployed or are currently reserved to you
+			<!-- Table -->
+			<center><div id="basic">
+			</div></center>
+		</form>
+		</div>
+	</div>
+</div>
+</center>
+
+<center>
+<div id="terminateVMs">
+	<!-- Header -->
+	<div class="hd">Terminate a Xen Virtual Machine</div>
+		<!-- Body -->
+		<div class="bd">
+			Currently Deployed Xen Virtual Machines
+			<center><div id="terminateVM">
+			</div></center>
+		</div>
+	</div>
+</div>
+</center>
+
+<center>
+<div id="stateOfVMs">
+	<!-- Header -->
+	<div class="hd">State of Xen Virtual Machines</div>
+		<!-- Body -->
+		<div class="bd">
+			State of all Xen Virtual Machines
+      <br>
+      <center><input type="text" name="stateVMs" id="allStates" size="20"/></center>
+      <br>
+			<center><div id="stateVM">
+			</div></center>
+		</div>
+	</div>
+</div>
+</center>
+
+<center>
+<div id="upTimeVMs">
+	<!-- Header -->
+	<div class="hd">Uptime of Xen Virtual Machines</div>
+		<!-- Body -->
+		<div class="bd">
+			Uptime of all deployed Xen Virtual Machines
+			<center><div id="upTimeVM">
+			</div></center>
+		</div>
+	</div>
+</div>
+</center>
+
+<div id="startVGs">
+	<!-- Header -->
+	<div class="hd"><center>Deploy a Xen Virtual Grid</center></div>
+		<!-- Body -->
+		<div class="bd">
+			<center>Configure Xen Virtual Grid</center><br>
+			<div id="startVG">
+        <script type="text/javascript">
+          var tabView = new YAHOO.widget.TabView('demo');
+        </script>
+        <div id="demo" class="yui-navset">
+          <ul class="yui-nav">
+            <li class="selected"><a href="#tab1"><em>Virtual Grid Configuration/Yaimgen</em></a></li>
+            <li><a href="#tab2"><em>Virtual Grid Logging</em></a></li>
+          </ul>            
+          <div class="yui-content">
+            <div id="tab1">
+            <table border=0>
+            <tr>
+              <td><input type="checkbox" id="autoVM" onclick="optionCheckbox(0)">Automatically select the Xen Virtual Machines:<br>
+                <p><b>Note:</b> Selecting the option will deploy n number of virtual machines with a default configuration, which is SLC4 32 bit, 0 Expiry Days, 256 Memory and 5 GB of disk.</p>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox">Automatically start virtual site<br>
+                <p><b>Note:</b>Under construction</p>
+              </td>
+            </tr>
+            <tr>
+              <td><p><i>How many virtual Machines:</i><input type="text" name="vmNumber" id="vmNumb" size="20"/></p></td>
+            </tr>
+            <tr>
+              <td><hr></td>
+            </tr>
+            <tr>
+              <td><p><i>Sitename:</i></p><input type="textbox"  name="vmSitename" id="vmS" size="20" /></td>
+            </tr>
+            <tr>
+              <td><p><i>Repository:</i><input type="text" name="vmRepository" id="vmR" size="20"/></p></td>
+            </tr>
+            <tr>
+              <td><div id="yaimgenTable"></div></td>
+            </tr>
+            </table>
+            </div>
+            <div id="tab2">
+              <p>Yaimgen Log</p>
+              <p>Not implemented</p>
+            </div>
+          </div>
+        </div>    
+			</div>
+		</div>
+	</div>
+</div>
+
+<center>
+<div id="stateVGs">
+	<!-- Header -->
+	<div class="hd">State of all Xen Virtual Grids</div>
+		<!-- Body -->
+		<div class="bd">
+			State of all Xen Virtual Grids
+      <br>
+      <table align=center>
+      <tr>
+        <td>Choose Virtual Grid Status:</td>
+        <td><center><input type="text" name="statevgs" id="allStatesVG" size="20"/></center></td>
+      </tr>
+      </table>
+      <br>
+			<center><div id="stateVG">
+			</div></center>
+		</div>
+	</div>
+</div>
+</center>
+
+<div id="siteInfo">
+	<!-- Header -->
+	<div class="hd"><center>Configure your site-info.def</center></div>
+		<!-- Body -->
+		<div class="bd">
+      <div id="siteinfo">
+      </div>
+	  </div>
+	</div>
+</div>
+
+<div id="serviceType">
+	<!-- Header -->
+	<div class="hd"><center>Other Service</center></div>
+		<!-- Body -->
+		<div class="bd">
+      <div id="servicetype">
+        <center><i>Please use the following syntax:</i></center>
+        <center><b><i>ServiceType1&ServiceType2&ServiceTypeN</i></b></center>
+        <center><input type="textbox"  name="vmServiceType" id="vmservicetype" size="20" class="x-form-text x-form-field"/></center>
+      </div>
+	  </div>
+	</div>
+</div>
+
+<center>
+<div id="terminateVGs">
+	<!-- Header -->
+	<div class="hd">Terminate Xen Virtual Grids</div>
+		<!-- Body -->
+		<div class="bd">
+			Terminate Xen Virtual Grids
+      <center><input type="textbox"  name="vmSitename" id="vmS2" size="20" /></center>
+			<center><div id="terminateVG">
+			</div></center>
+		</div>
+	</div>
+</div>
+</center>
+
+<center>
+<div id="admins">
+	<!-- Header -->
+	<div class="hd">Admin Control Panel</div>
+		<!-- Body -->
+		<div class="bd">
+       <table width="100%" align=center> 
+        <td width="100%" style="border: 1px solid black"> <center>Available Options to
+        General Configuration</center><br>
+        <div style="border:1px dashed;background-color:#FFFF66">
+        <center>You can enable or disabled existing virtual machines and disallow or allow acess to the portal<br>Disabling a virtual machine is only done locally and can only be done on VMs that are notDeployed</center>
+        </div><br>
+        <div id="generalOpt" style="border: 1px dashed">
+          <center><input type="checkbox" id="disablePortal" onclick="disablePortal()">Disable Portal<br></center>
+        </div>
+        <br>
+        <br>
+  			<center>
+  			State of all Virtual Machines
+        <br>
+        <input type="text" name="stateAdmin" id="allAdmin" size="20"/>
+        <br>
+        <div id="admin">
+	  		</div></center>
+        <br>
+        </td>
+       </table>
+		</div>
+	</div>
+</div>
+</center>
+
+</body>
+</html>
