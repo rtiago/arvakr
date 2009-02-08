@@ -5,8 +5,8 @@
   - MazeGL
 
 => Networking
-  - Tracerouting
-  - bytehorder
+  - Traceroute
+  - byteorder
 
 => Glite.InformationProvider
 
